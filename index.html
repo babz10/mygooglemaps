@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Googlemaps</title>
+	<style>
+		html, body {
+			margin: 0;
+			width: 100%;
+			height: 100%;
+			background-color: #F4F3F4;
+		}
+
+		button {
+			min-width: 100px;
+			height: 50px;
+			margin: 20px;
+			outline: none;
+			border: none;
+			border-radius: 5px;
+			background-color: #4ef442;
+			color: white;
+			font-size: 18px;
+		}
+
+		button:hover {
+			background-color: #f44292;
+		}
+
+		ul {
+			float: right;
+		}
+
+		li{
+		  display: inline;
+		}
+
+		#pac-input {
+	        background-color: #fff;
+	        font-family: sans-serif;
+	        height: 20px;
+	        font-size: 15px;
+	        font-weight: 300;
+	        margin-left: 12px;
+	        padding: 0 11px 0 13px;
+	        text-overflow: ellipsis;
+	        width: 400px;
+      	}
+
+		#pac-input:focus {
+			border-color: #4d90fe;
+		}
+
+	  #b6-panel {
+        padding: 5px;
+        text-align: center;
+        font-family: sans-serif;
+        line-height: 30px;
+      }
+
+		#map {
+			width: 60%; 
+			height:60%;			
+			margin: 0 auto;
+			margin-top: 10px;
+			border: 1px solid grey;
+		}
+	</style>    
+
+	<script type="text/javascript">
+
+		var map, currentLatLng, drawingMgr, markers = [], styles = {
+			default: null,
+			hide: [
+			  {
+				featureType: 'poi.business',
+				stylers: [{visibility: 'off'}]
+			  },
+			  {
+				featureType: 'transit',
+				elementType: 'labels.icon',
+				stylers: [{visibility: 'off'}]
+			  }
+		  	]
+		};
+
+		function addMarker(location) {
+			var colors = ['pink', 'orange', 'green', 'purple'];
+			var random_color = colors[Math.floor(Math.random() * colors.length)];
+			var icon_url = 'http://maps.google.com/mapfiles/ms/icons/'+random_color+'-dot.png';	
+			var marker = new google.maps.Marker({
+				position: location,
+				map: map,
+				icon: icon_url
+			});
+			
+			currentLatLng = location;
+		}
+
+		function resizeMap() {
+			if (typeof map == "undefined") return;
+			setTimeout(function () { resizingMap(); }, 500);
+		}
+
+		function resizingMap() {
+			if (typeof map == "undefined") return;
+			var center = map.getCenter();
+			google.maps.event.trigger(map, "resize");
+			map.setCenter(center);
+		}
+
+		function initMap() {
+			var myLatLng = { lat: 37.386051, lng: -122.083855 };
+
+			map = new google.maps.Map(document.getElementById('map'), {
+				zoom: 10,
+				center: myLatLng
+			});
+			
+			map.setOptions({styles: styles['hide']});
+			
+			var input = document.getElementById('pac-input');
+			var searchBox = new google.maps.places.SearchBox(input);
+			map.controls[google.maps.ControlPosition.TOP_CENTER].push(input);
+
+			map.addListener('bounds_changed', function () {
+				searchBox.setBounds(map.getBounds());
+			});
+
+			searchBox.addListener('places_changed', function () {
+				var places = searchBox.getPlaces();
+
+				if (places.length == 0) {
+					alert("No results found");
+					return;
+				}
+
+				var bounds = new google.maps.LatLngBounds();
+				places.forEach(function (place) {
+
+					if (!place.geometry) {
+						return;
+					}
+
+					addMarker(place.geometry.location);
+
+
+					if (place.geometry.viewport) {
+						bounds.union(place.geometry.viewport);
+					} else {
+						bounds.extend(place.geometry.location);
+					}
+				});
+				map.fitBounds(bounds);
+
+			});
+			
+			addMarker(myLatLng);
+
+			map.addListener('click', function (event) {
+				addMarker(event.latLng);
+			});
+
+			var directionsService = new google.maps.DirectionsService;
+			var directionsDisplay = new google.maps.DirectionsRenderer;
+			var onChangeHandler = function() {
+				calculateAndDisplayRoute(directionsService, directionsDisplay);
+			};
+
+			document.getElementById('start').addEventListener('change', onChangeHandler);
+			document.getElementById('end').addEventListener('change', onChangeHandler);	
+			directionsDisplay.setMap(map);
+
+			resizeMap();
+		}
+	</script>
+</head>
+<body>
+	<div class="mainContainer">
+		<center>
+			<button id="b1">B 1</button>
+			<button id="b2">B 2</button>
+			<button id="b3">B 3</button>
+			<button id="b4">B 4</button>
+			<button id="b5">B 5</button> <button id="drawing-stop" style="display:none">Stop Drawing</button>
+			<button id="b6">B 6</button>
+                        <button onclick="setCenter()"> setCenter </button>
+
+
+			<ul id="markers" style="display:none">
+				<li id="marker-red"><img src="http://maps.google.com/mapfiles/ms/icons/blue-dot.png"/></li>
+				<li id="marker-blue"><img src="http://maps.google.com/mapfiles/ms/icons/blue-dot.png"/></li>
+				<li id="marker-green"><img src="http://maps.google.com/mapfiles/ms/icons/green-dot.png"/></li>
+				<li id="marker-yellow"><img src="http://maps.google.com/mapfiles/ms/icons/yellow-dot.png"/></li>
+			</ul>
+
+			<div id="b6-panel" style="display:none">
+				<b>From: </b>
+				<select id="start">
+				  <option value="kingman, az">Kingman</option>
+				  <option value="joplin, mo">Joplin, MO</option>
+				  <option value="amarillo, tx">Amarillo</option>
+				  <option value="gallup, nm">Gallup, NM</option>
+				  <option value="st louis, mo">St Louis</option>
+				  <option value="flagstaff, az">Flagstaff, AZ</option>
+				  <option value="chicago, il">Chicago</option>
+				  <option value="oklahoma city, ok">Oklahoma City</option>
+				  <option value="los angeles, ca">Los Angeles</option>
+				  <option value="barstow, ca">Barstow</option>
+				  <option value="san bernardino, ca">San Bernardino</option>
+				  <option value="winona, az">Winona</option>
+				</select>
+				<b>To: </b>
+				<select id="end">
+				  <option value="kingman, az">Kingman</option>
+				  <option value="joplin, mo">Joplin, MO</option>
+				  <option value="amarillo, tx">Amarillo</option>
+				  <option value="gallup, nm">Gallup, NM</option>
+				  <option value="st louis, mo">St Louis</option>
+				  <option value="flagstaff, az">Flagstaff, AZ</option>
+				  <option value="chicago, il">Chicago</option>
+				  <option value="oklahoma city, ok">Oklahoma City</option>
+				  <option value="los angeles, ca">Los Angeles</option>
+				  <option value="barstow, ca">Barstow</option>
+				  <option value="san bernardino, ca">San Bernardino</option>
+				  <option value="winona, az">Winona</option>
+				</select>
+			</div>
+		
+			<input id="pac-input" class="controls" style="display:none;" type="text" placeholder="Search">
+		</center>		
+	</div>
+	
+	<div id="map"></div>
+
+    <script src="https://www.google.com/recaptcha/api.js" type="text/javascript"></script>
+	<script src="https://maps.googleapis.com/maps/api/js?libraries=places,drawing,geometry&callback=initMap"></script>    
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+	<script src="core.js" type="text/javascript"></script>
+</body>
+</html>
